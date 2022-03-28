@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:second_ssh/components/api.dart';
@@ -5,6 +9,9 @@ import 'package:second_ssh/components/constants.dart';
 import 'package:second_ssh/components/navbar.dart';
 import 'package:second_ssh/components/helpers.dart';
 import 'package:second_ssh/main.dart';
+
+import 'package:dartssh2/dartssh2.dart';
+import 'package:xterm/next.dart';
 
 class SshPage extends StatefulWidget {
   const SshPage({Key? key, required this.item}) : super(key: key);
@@ -15,9 +22,51 @@ class SshPage extends StatefulWidget {
 }
 
 class _SshPageState extends State<SshPage> {
+  final terminal = Terminal(maxLines: 10000);
+
+  SSHClient? client;
+  SSHSession? session;
+  final controller = ScrollController();
+  bool loaded = false;
+
+  Future<void> initTerminal() async {
+    Host host = await SSHAPI().get(widget.item);
+    client = SSHClient(
+      await SSHSocket.connect(host.host, host.port),
+      username: host.username,
+      onPasswordRequest: () => host.password,
+    );
+
+    session = await client!.shell(
+      pty: SSHPtyConfig(
+        width: terminal.viewWidth,
+        height: terminal.viewHeight,
+      ),
+    );
+
+    session!.stdout
+        .cast<List<int>>()
+        .transform(Utf8Decoder())
+        .listen(terminal.write);
+
+    session!.stderr
+        .cast<List<int>>()
+        .transform(Utf8Decoder())
+        .listen(terminal.write);
+
+    terminal.onResize = (width, height, pixelWidth, pixelHeight) {
+      session!.resizeTerminal(width, height, pixelWidth, pixelHeight);
+    };
+
+    terminal.onOutput = (data) {
+      session!.write(utf8.encode(data) as Uint8List);
+    };
+  }
+
   @override
   void initState() {
     super.initState();
+    initTerminal();
   }
 
   //plausible.event(page: 'create');
@@ -28,7 +77,18 @@ class _SshPageState extends State<SshPage> {
         mainAxisSize: MainAxisSize.max,
         children: [
           navbar(themeData, back: true, context: context),
-          BigCmdBox(item: widget.item)
+          //BigCmdBox(item: widget.item)
+          loaded
+              ? SafeArea(
+                  child: SizedBox(
+                    height: 100.0,
+                    width: 400.0,
+                    child: TerminalView(
+                      terminal,
+                    ),
+                  ),
+                )
+              : Container(),
         ],
       ),
     );
@@ -89,6 +149,8 @@ class _BigCmdBoxState extends State<BigCmdBox> {
     updateState();
   }
 
+  void onInput(String input) {}
+
   @override
   Widget build(BuildContext context) {
     // Scroll to bottom
@@ -132,59 +194,6 @@ class _BigCmdBoxState extends State<BigCmdBox> {
           ],
         ),
       ),
-      SizedBox(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            color: const Color.fromRGBO(0, 0, 0, 0.2),
-            child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: SelectableText.rich(
-                    TextSpan(
-                        text: commandOutput,
-                        style: const TextStyle(fontFamily: 'ConsoleNormal')),
-                  ),
-                )),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            SizedBox(
-              width: MediaQuery.of(context).size.width * 0.85,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    TextBox(
-                        onSubmitted: cmdSend,
-                        controller: cmdController,
-                        placeholder: 'Command')
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(
-              width: 15.0,
-            ),
-            SizedBox(
-              width: MediaQuery.of(context).size.width * 0.10,
-              child: Button(
-                child: const Padding(
-                  padding: EdgeInsets.all(2.0),
-                  child: Text('Send'),
-                ),
-                onPressed: () => cmdSend(cmdController.text),
-              ),
-            )
-          ],
-        ),
-      )
     ]);
   }
 }

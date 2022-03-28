@@ -46,6 +46,7 @@ dependencies:
   shelf_static: ^1.1.0
   dartssh2: ^2.6.0
   encrypt: ^5.0.1
+  xterm: ^3.0.0-alpha
 
 dev_dependencies:
   flutter_test:
@@ -71,13 +72,13 @@ flutter:
   fonts:
     - family: RobotoMono
       fonts:
-        - asset: fonts/RobotoMono-Regular.ttf
+        - asset: assets/fonts/RobotoMono-Regular.ttf
     - family: LucidaConsole
       fonts:
-        - asset: fonts/LucidaConsole.ttf
+        - asset: assets/fonts/LucidaConsole.ttf
     - family: ConsoleNormal
       fonts:
-        - asset: fonts/Console-Normal.ttf
+        - asset: assets/fonts/Console-Normal.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

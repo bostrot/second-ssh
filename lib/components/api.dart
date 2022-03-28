@@ -79,6 +79,13 @@ class SSHAPI {
   /// Constructor
   //SSHAPI(this.host, this.port, this.username, this.password);
 
+  /// Open in Terminal
+  void openInTerminal() async {
+    // Execute command in terminal
+    ProcessResult results = await Process.run(
+        'ssh', [host.username, '@', host.host, '-p', host.port.toString()]);
+  }
+
   /// List saved SSH Hosts from SharedPreferences
   /// @return Future<List<String>>
   Future<List<String>> list() async {
