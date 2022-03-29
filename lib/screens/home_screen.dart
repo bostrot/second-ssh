@@ -167,7 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
           Button(
               child: const Text('send'),
               onPressed: () async {
-                SSHAPI api = SSHAPI('192.168.1.155', 22, 'root', '***REMOVED***');
+                SSHAPI api = SSHAPI('192.168.1.155', 22, 'root', '');
                 await api.connect();
                 setState(() {
                   sometext += '\n' + _controller.text;
